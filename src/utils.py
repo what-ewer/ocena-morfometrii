@@ -1,3 +1,4 @@
+from operator import le
 import pickle  
 import numpy as np    
 
@@ -51,9 +52,8 @@ def get_lengths_recursive(edges, lengths):
     new_edges = []
     for edge in edges:
         children = edge.node_b.edges
-        for e in children:
-            lengths.append((e['length'] / edge['length'], e['generation']))
-            new_edges.append(e)
+        lengths.append((edge['length'], edge['generation']))
+        new_edges.extend(children)
     return get_lengths_recursive(new_edges, lengths)
 
 def get_lengths(root):
@@ -67,9 +67,8 @@ def get_diameters_recursive(edges, diameters):
     new_edges = []
     for edge in edges:
         children = edge.node_b.edges
-        for e in children:
-            diameters.append((e['mean_radius'] / edge['mean_radius'], e['generation']))
-            new_edges.append(e)
+        diameters.append((edge['mean_radius'], edge['generation']))
+        new_edges.extend(children)
     return get_diameters_recursive(new_edges, diameters)
 
 def get_diameters(root):

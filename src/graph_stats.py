@@ -26,7 +26,7 @@ class GraphStats:
             lengths_per_gen[lg[1]-1].append(lg[0])
 
         plt.title('lengths count')
-        plt.hist(lengths, bins=20)
+        plt.hist(lengths, bins=5)
         plt.xlabel('Length')
         plt.ylabel('Count')
         plt.savefig(f"results/lengths")
