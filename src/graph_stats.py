@@ -17,68 +17,85 @@ class GraphStats:
         print("Generating stats about bifurcation angles in graph")
         self.bifurcation_angles()
 
+        print("Generating stats about tortuosities segments in graph")
+        self.tortuosities()
+
+    def stats_per_gen(self, stat):
+        stats = [lg[0] for lg in stat]
+        gens = [lg[1] for lg in stat]
+        stats_per_gen = [[] for _ in range(max(gens))]
+        for lg in stat:
+            stats_per_gen[lg[1]-1].append(lg[0])
+        return stats, gens, stats_per_gen
+
     def mean_length(self):
         lengths_generations = get_lengths(self.dag.root)
-        lengths = [lg[0] for lg in lengths_generations]
-        generations = [lg[1] for lg in lengths_generations]
-        lengths_per_gen = [[] for _ in range(max(generations))]
-        for lg in lengths_generations:
-            lengths_per_gen[lg[1]-1].append(lg[0])
+        lengths, generations, lengths_per_gen = self.stats_per_gen(lengths_generations)
 
         plt.title('lengths count')
         plt.hist(lengths, bins=5)
-        plt.xlabel('Length')
-        plt.ylabel('Count')
+        plt.xlabel('length')
+        plt.ylabel('count')
         plt.savefig(f"results/lengths")
         plt.clf()
 
         plt.title('lengths per generation')
         plt.boxplot(lengths_per_gen)
-        plt.xlabel('Generation')
-        plt.ylabel('Lengths')
+        plt.xlabel('generation')
+        plt.ylabel('lengths')
         plt.savefig(f"results/lengths_per_generation")
         plt.clf()
 
     def mean_diameter(self):
         diameters_generations = get_diameters(self.dag.root)
-        diameters = [lg[0] for lg in diameters_generations]
-        generations = [lg[1] for lg in diameters_generations]
-        diameters_per_gen = [[] for _ in range(max(generations))]
-        for lg in diameters_generations:
-            diameters_per_gen[lg[1]-1].append(lg[0])
+        diameters, generations, diameters_per_gen = self.stats_per_gen(diameters_generations)
 
         plt.title('lengths count')
         plt.hist(diameters, bins=8)
-        plt.xlabel('Diameter')
-        plt.ylabel('Count')
+        plt.xlabel('diameter')
+        plt.ylabel('count')
         plt.savefig(f"results/diameters")
         plt.clf()
 
         plt.title('diameters per generation')
         plt.boxplot(diameters_per_gen)
-        plt.xlabel('Generation')
-        plt.ylabel('Diameters')
+        plt.xlabel('generation')
+        plt.ylabel('diameters')
         plt.savefig(f"results/diameters_per_generation")
         plt.clf()
 
     def bifurcation_angles(self):
         angles_generations = [(edge['relative_angle'] / np.pi * 180, edge['generation']) for edge in self.dag.edges[1:]]
-        angles = [a[0] for a in angles_generations]
-        generations = [a[1] for a in angles_generations]
-        angles_per_gen = [[] for _ in range(max(generations))]
-        for ag in angles_generations:
-            angles_per_gen[ag[1]-1].append(ag[0])
+        angles, generations, angles_per_gen = self.stats_per_gen(angles_generations)
 
         plt.title('bifurcation angles count')
         plt.hist(angles, bins=18)
-        plt.xlabel('Angle')
-        plt.ylabel('Count')
+        plt.xlabel('angle')
+        plt.ylabel('count')
         plt.savefig(f"results/bifurcation_angles")
         plt.clf()
 
         plt.title('bifurcation angles per generation')
         plt.boxplot(angles_per_gen)
-        plt.xlabel('Generation')
-        plt.ylabel('Angles')
+        plt.xlabel('generation')
+        plt.ylabel('angles')
         plt.savefig(f"results/bifurcation_angles_per_generation")
+        plt.clf()
+
+    def tortuosities(self):
+        angles_generations = [(edge['tortuosity'], edge['generation']) for edge in self.dag.edges[1:]]
+        tortuosities, generations, tortuosities_per_gen = self.stats_per_gen(angles_generations)
+
+        plt.title('segments tortuosisities count')
+        plt.hist(tortuosities, bins=8)
+        plt.xlabel('tortuosities segments')
+        plt.ylabel('count')
+        plt.savefig(f"results/tortuosities")
+        plt.clf()
+
+        plt.title('segments tortuosities per generation')
+        plt.boxplot(tortuosities_per_gen)
+        plt.xlabel('generation')
+        plt.ylabel('tortuosities segments')
+        plt.savefig(f"results/tortuosities_per_generation")
         plt.clf()
