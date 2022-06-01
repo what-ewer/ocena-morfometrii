@@ -2,6 +2,7 @@ __pycache__/
 
 # ignore all the folders with data files in data
 data/*/
+results/*.png
 
 # ignore publications 
 projekt_topologia/*
