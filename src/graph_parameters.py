@@ -24,6 +24,9 @@ class GraphParameters:
         print("Getting information about generations of edges...")
         self.find_edges_generation(max_gen=8)
 
+        print("Getting information about volume filled with vascular structure")
+        self.get_volume_filled_with_vascular_structure()
+
 
     ####################################################################################
     #                                  LOADING GRAPH                                   #
@@ -112,3 +115,23 @@ class GraphParameters:
                 
         for e in edge.node_b.edges:
             self.get_edges_generation(e, edge, max_gen, max_angle, max_thick_diff)
+
+
+    ####################################################################################
+    #                      VOLUME FILLED WITH VASCULAR STRUCTURE                       #
+    ####################################################################################
+
+    def get_volume_recursive(self, edges, sum):
+        if len(edges) == 0:
+            return sum
+
+        new_edges = []
+        for e in edges:
+            sum += len(e['voxels']) * e['mean_radius'] * e['mean_radius'] * np.pi
+            sum += 4/3 * e.node_b['radius'] * e.node_b['radius'] * e.node_b['radius'] * np.pi
+            new_edges.extend(e.node_b.edges)
+        return self.get_volume_recursive(new_edges, sum)
+
+    def get_volume_filled_with_vascular_structure(self):
+        self.dag['vascular_structure_volume'] = self.get_volume_recursive(self.dag.root.edges, 0)
+        print(self.dag['vascular_structure_volume'])

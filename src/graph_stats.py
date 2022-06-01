@@ -20,6 +20,8 @@ class GraphStats:
         print("Generating stats about tortuosities segments in graph")
         self.tortuosities()
 
+        # VOLUME FILLED WITH VASCULAR STRUCTURE to json/csv?
+
     def stats_per_gen(self, stat):
         stats = [lg[0] for lg in stat]
         gens = [lg[1] for lg in stat]
