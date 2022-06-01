@@ -22,7 +22,7 @@ class GraphParameters:
         self.set_edges_tortuosities()
 
         print("Getting information about generations of edges...")
-        self.find_edges_generation(lambda x,y: False, max_gen=8)
+        self.find_edges_generation(max_gen=8)
 
 
     ####################################################################################
@@ -92,11 +92,11 @@ class GraphParameters:
     #                                  GENERATIONS                                     #
     ####################################################################################
 
-    def find_edges_generation(self, same_gen, max_gen=np.inf):
+    def find_edges_generation(self, max_gen=np.inf, max_angle = np.pi / 6, max_thick_diff = 0.7):
         for e in self.dag.root.edges:
-            self.get_edges_generation(e, same_gen, None, max_gen)
+            self.get_edges_generation(e, None, max_gen, max_angle, max_thick_diff)
 
-    def get_edges_generation(self, edge: Edge, same_gen, parent=None, max_gen=np.inf, max_angle = np.pi / 6, max_thick_diff = 0.7):
+    def get_edges_generation(self, edge: Edge, parent=None, max_gen=np.inf, max_angle = np.pi / 6, max_thick_diff = 0.7):
         # basic condition for root
         if parent is None: 
             edge['generation'] = 1
@@ -111,4 +111,4 @@ class GraphParameters:
             edge['generation'] = max_gen + 1
                 
         for e in edge.node_b.edges:
-            self.get_edges_generation(e, same_gen, edge, max_gen)
+            self.get_edges_generation(e, edge, max_gen, max_angle, max_thick_diff)
