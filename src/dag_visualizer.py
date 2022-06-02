@@ -1,5 +1,7 @@
 import numpy as np
 from vis_utils import VolumeVisualizer, ColorMapVisualizer
+import matplotlib.pyplot as plt
+from PIL import Image
 from skimage.morphology import skeletonize_3d
 
 class DAG_Visualizer:
@@ -43,3 +45,17 @@ class DAG_Visualizer:
         DAG_Visualizer.visualize_mask_non_bin(lsd)
         DAG_Visualizer.visualize_addition(base_mask, lsd)
         DAG_Visualizer.visualize_skeleton(lsd, visualize_mask=True)
+
+    @staticmethod
+    def vascular_network_area(reconstruction_projection_mask):
+        plt.figure(figsize=(15, 10))
+        plt.title('vascular network area 2d')
+        im = Image.fromarray(reconstruction_projection_mask.T)
+        im.save("results/vascular_network_2d.jpeg")
+
+    @staticmethod
+    def vascular_density(convex_projection):
+        plt.figure(figsize=(15, 10))
+        plt.title('convex projection')
+        im = Image.fromarray(convex_projection.T)
+        im.save("results/convex_projection.jpeg")

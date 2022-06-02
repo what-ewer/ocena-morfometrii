@@ -1,11 +1,20 @@
 from src.dag import DAG
 from src.node import Node
 from src.edge import Edge
-from src.utils import load_dag, calculate_vectors_relative_angle, calculate_direction, generational_diff
+from src.dag_visualizer import DAG_Visualizer
+from src.utils import load_dag, save_dag, calculate_vectors_relative_angle, calculate_direction, generational_diff
 import numpy as np
+from sklearn.decomposition import PCA
+from skimage.morphology import convex_hull_image
+from scipy.signal import fftconvolve
 
 class GraphParameters:
-    def __init__(self, graph_path, weights=[1, 1, 1, 1, 1, 0.8, 0.8, 0.6, 0.2]):
+    def __init__(self, 
+            graph_path, # path to graph file
+            reconstruction_path = None,  # path to reconstruction (if want to get 3d parameters)
+            max_gen = 8,
+            edge_dir_weights = [1, 1, 1, 1, 1, 0.8, 0.8, 0.6, 0.2]):
+
         print(f"Loading graph file {graph_path}...")
         self.load_graph(graph_path)
 
@@ -14,7 +23,7 @@ class GraphParameters:
         self.add_parent_to_nodes()
 
         print("Calculating edge directions...")
-        self.set_edges_directions(weights)
+        self.set_edges_directions(edge_dir_weights)
 
         print("Calculating edges relative angles(bifurcation angles)...")
         self.set_edges_relative_angles(self.dag.root)
@@ -23,7 +32,10 @@ class GraphParameters:
         self.set_edges_tortuosities()
 
         print("Getting information about generations of edges...")
-        self.find_edges_generation(max_gen=8)
+        self.find_edges_generation(max_gen)
+
+        print("Getting information about number of vessels")
+        self.get_number_of_vessels()
 
         print("Getting information about volume filled with vascular structure")
         self.get_volume_filled_with_vascular_structure()
@@ -31,21 +43,25 @@ class GraphParameters:
         print("Getting information about interstitial distances to nearest vessels...")
         self.set_interstitial_distances()
 
-        # X fractal capacity
+        # parameters absed on reconstruction instead of graph
+        if reconstruction_path:
+            print("Loading reconstruction...")
+            self.reconstruction = np.load(reconstruction_path)
 
-        # X area covered by vascular network
+            print("Getting vascular network area in 2d")
+            self.get_vascular_network_area()
 
-        # nbr of vessels
+            print("Getting vascular density...")
+            self.vascular_density()
 
-        # vessel length - total and avg
+            print("Calculating branching index...")
+            self.get_branching_index()
 
-        # X vascular density
+            print("Calcularing lacunarity")
+            self.get_lacunarity()
 
-        # X lacunarity
-
-        # correletion with stages of tumor aggressiveness
-
-        # X branching index
+        print("Saving graph file...")
+        save_dag(self.dag, "results/dag_with_stats.pkl")
 
 
     ####################################################################################
@@ -143,6 +159,23 @@ class GraphParameters:
 
 
     ####################################################################################
+    #                                VESSELS COUNT                                     #
+    ####################################################################################
+
+    def vessels_recursive(self, node):
+        if len(node.edges) == 0:
+            return 1
+        
+        count = 0
+        for e in node.edges:
+            count += self.vessels_recursive(e.node_b)
+        return count
+
+    def get_number_of_vessels(self):
+        self.dag['number_of_vessels'] = self.vessels_recursive(self.dag.root)
+
+
+    ####################################################################################
     #                              INTERSTITIAL DISTANCE                               #
     ####################################################################################
     
@@ -173,6 +206,72 @@ class GraphParameters:
         for e in self.dag.edges:
             sum += 2/3 * len(e['voxels']) * e['mean_radius'] * e['mean_radius'] * np.pi
         self.dag['vascular_structure_volume'] = sum
-        # print(self.dag['vascular_structure_volume'])
-        # reconstruction = np.load('data/P07/reconstruction.npy')
-        # print(np.sum(reconstruction > 0))
+
+
+    ####################################################################################
+    #                          AREA COVERED BY VASCULAR NETWORK                        #
+    ####################################################################################
+
+    def project_reconstruction(self):
+        reconstruction_coords = np.argwhere(self.reconstruction > 0)
+        pca = PCA(n_components=2)
+        pca.fit(reconstruction_coords)
+        return pca.transform(reconstruction_coords)
+
+    def get_vascular_network_area(self):
+        reconstruction_projection = self.project_reconstruction()
+        rounded_reconstruction_projection = np.round(reconstruction_projection)
+        mins = np.min(reconstruction_projection, axis=0)
+        shifted_projection = (rounded_reconstruction_projection - mins).astype(np.int)
+        self.reconstruction_projection_mask = np.zeros(np.max(shifted_projection + 1, axis=0), dtype=np.bool)
+        self.reconstruction_projection_mask[shifted_projection[:, 0], shifted_projection[:, 1]] = 1
+        DAG_Visualizer.vascular_network_area(self.reconstruction_projection_mask)
+        self.dag['vascular_network_projection_area'] = np.sum(self.reconstruction_projection_mask)
+
+
+    ####################################################################################
+    #                                   VASCULAR DENSITY                               #
+    ####################################################################################
+
+    def vascular_density(self):
+        self.convex_projection = convex_hull_image(self.reconstruction_projection_mask)
+        DAG_Visualizer.vascular_density(self.convex_projection)
+        self.dag['projection_explant_area'] = self.convex_projection.sum()
+        self.dag['vascular_density'] = self.dag['vascular_network_projection_area'] / self.dag['projection_explant_area']
+
+
+    ####################################################################################
+    #                                   BRANCHING INDEX                                #
+    ####################################################################################
+
+    def get_number_of_branching_points(self):
+        nodes_with_children = [n for n in self.dag.nodes if len(n.edges) != 0]
+        branch_nodes = [n for n in nodes_with_children if n['parent'] is not None]
+        return len(branch_nodes)
+
+    def get_branching_index(self):
+        self.dag['branching_points'] = self.get_number_of_branching_points()
+        self.dag['branchings_points_per_pixel'] = self.dag['branching_points'] / self.dag['vascular_network_projection_area']
+
+
+    ####################################################################################
+    #                                     LACUNARITY                                   #
+    ####################################################################################
+
+    def calculate_one_box_lacunarity(self, box_size):
+        box = np.ones((box_size, box_size))
+        convolution = fftconvolve(self.reconstruction_projection_mask, box, mode='valid')
+        mean_sqrd = np.mean(convolution)**2
+        if mean_sqrd == 0:
+            return 0.0
+        return (np.var(convolution) / mean_sqrd) + 1
+
+    def calculate_avg_lacunarity(self, box_sizes):
+        lacunarities = []
+        for box_size in box_sizes:
+            lacunarities.append(self.calculate_one_box_lacunarity(box_size))
+        return np.mean(lacunarities)
+
+    def get_lacunarity(self):
+        box_sizes = [10, 30, 50, 70, 90, 110, 130, 150]
+        self.dag['lacunarity'] = self.calculate_avg_lacunarity(box_sizes)

@@ -24,6 +24,8 @@ class GraphStats:
         print("Generating stats about interstitial distances")
         self.interstitial_distances()
 
+        # AREA COVERED BY VASCULAR NETWORK to json/csv?
+
     def stats_per_gen(self, stat):
         stats = [lg[0] for lg in stat]
         gens = [lg[1] for lg in stat]
@@ -44,7 +46,7 @@ class GraphStats:
         plt.clf()
 
         plt.title('lengths per generation')
-        plt.boxplot(lengths_per_gen)
+        plt.boxplot(lengths_per_gen[:-1])
         plt.xlabel('generation')
         plt.ylabel('lengths')
         plt.savefig(f"results/lengths_per_generation")
@@ -62,7 +64,7 @@ class GraphStats:
         plt.clf()
 
         plt.title('diameters per generation')
-        plt.boxplot(diameters_per_gen)
+        plt.boxplot(diameters_per_gen[:-1])
         plt.xlabel('generation')
         plt.ylabel('diameters')
         plt.savefig(f"results/diameters_per_generation")
@@ -80,14 +82,14 @@ class GraphStats:
         plt.clf()
 
         plt.title('bifurcation angles per generation')
-        plt.boxplot(angles_per_gen)
+        plt.boxplot(angles_per_gen[:-1])
         plt.xlabel('generation')
         plt.ylabel('angles')
         plt.savefig(f"results/bifurcation_angles_per_generation")
         plt.clf()
 
     def tortuosities(self):
-        angles_generations = [(edge['tortuosity'], edge['generation']) for edge in self.dag.edges[1:]]
+        angles_generations = [(edge['tortuosity'], edge['generation']) for edge in self.dag.edges]
         tortuosities, generations, tortuosities_per_gen = self.stats_per_gen(angles_generations)
 
         plt.title('segments tortuosisities count')
@@ -98,14 +100,14 @@ class GraphStats:
         plt.clf()
 
         plt.title('segments tortuosities per generation')
-        plt.boxplot(tortuosities_per_gen)
+        plt.boxplot(tortuosities_per_gen[:-1])
         plt.xlabel('generation')
         plt.ylabel('tortuosities segments')
         plt.savefig(f"results/tortuosities_per_generation")
         plt.clf()
 
     def interstitial_distances(self):
-        int_dist_generations = [(edge['interstitial_distance'], edge['generation']) for edge in self.dag.edges[1:]]
+        int_dist_generations = [(edge['interstitial_distance'], edge['generation']) for edge in self.dag.edges]
         int_distances, generations, int_dist_per_gen = self.stats_per_gen(int_dist_generations)
 
         plt.title('interstitial distances')
@@ -116,8 +118,9 @@ class GraphStats:
         plt.clf()
 
         plt.title('interstitial distances per generation')
-        plt.boxplot(int_dist_per_gen)
+        plt.boxplot(int_dist_per_gen[:-1])
         plt.xlabel('generation')
         plt.ylabel('interstitial distance')
         plt.savefig(f"results/interstitial_distance_per_generation")
         plt.clf()
+    
