@@ -37,6 +37,9 @@ class GraphParameters:
         print("Getting information about number of vessels")
         self.get_number_of_vessels()
 
+        print("Getting information about vessel average and total length")
+        self.get_vessel_length()
+
         print("Getting information about volume filled with vascular structure")
         self.get_volume_filled_with_vascular_structure()
 
@@ -159,7 +162,7 @@ class GraphParameters:
 
 
     ####################################################################################
-    #                                VESSELS COUNT                                     #
+    #                           VESSELS COUNT + LENGTH                                 #
     ####################################################################################
 
     def vessels_recursive(self, node):
@@ -171,9 +174,25 @@ class GraphParameters:
             count += self.vessels_recursive(e.node_b)
         return count
 
+    def vessel_length_recursive(self, edge):
+        if len(edge.node_b.edges) == 0:
+            return edge['length']
+        
+        count = 0
+        for e in edge.node_b.edges:
+            count += self.vessel_length_recursive(e)
+        return count
+
     def get_number_of_vessels(self):
         self.dag['number_of_vessels'] = self.vessels_recursive(self.dag.root)
 
+    def get_vessel_length(self):
+        vessel_length = 0
+        for e in self.dag.root.edges:
+            vessel_length +=  self.vessel_length_recursive(e)
+
+        self.dag['vessel_total_length'] = vessel_length
+        self.dag['vessel_avg_length'] = vessel_length / self.dag['number_of_vessels']
 
     ####################################################################################
     #                              INTERSTITIAL DISTANCE                               #
