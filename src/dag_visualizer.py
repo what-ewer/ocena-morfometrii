@@ -3,6 +3,7 @@ from vis_utils import VolumeVisualizer, ColorMapVisualizer
 import matplotlib.pyplot as plt
 from PIL import Image
 from skimage.morphology import skeletonize_3d
+from scipy.ndimage import zoom
 
 class DAG_Visualizer:
     @staticmethod
@@ -51,11 +52,36 @@ class DAG_Visualizer:
         plt.figure(figsize=(15, 10))
         plt.title('vascular network area 2d')
         im = Image.fromarray(reconstruction_projection_mask.T)
-        im.save("results/vascular_network_2d.jpeg")
+        im.save("results/vascular_network_2d.png")
 
     @staticmethod
     def vascular_density(convex_projection):
         plt.figure(figsize=(15, 10))
         plt.title('convex projection')
         im = Image.fromarray(convex_projection.T)
-        im.save("results/convex_projection.jpeg")
+        im.save("results/convex_projection.png")
+
+    @staticmethod
+    def visualize_contours(scales, contours_lengths, rec_mask, proj_contour_func):
+        plt.figure(figsize=(10, 40))
+        for i, scale in enumerate(scales):
+            proj = zoom(rec_mask, scale, order=0)
+            contour = proj_contour_func()
+            plt.subplot(len(scales), 2, 2 * i + 1)
+            plt.imshow(proj.T)
+            plt.subplot(len(scales), 2, 2 * i + 2)
+            plt.imshow(contour.T)
+            contours_lengths.append(int(np.sum(contour)))
+        plt.savefig('results/contours_scaled')
+        plt.clf()
+        return scales, contours_lengths
+
+    @staticmethod
+    def scales_contour_lengths(scales, contours_lengths, lm):
+        plt.figure(figsize=(11, 7))
+        plt.scatter(np.log(scales), np.log(contours_lengths), s=30)
+        plt.plot(np.log(scales), lm.predict(np.log(scales).reshape(-1, 1)), color='red')
+        plt.xlabel('log(scaling_factor)')
+        plt.ylabel('log(contour_area)')
+        plt.savefig('results/scales_contour_corelation')
+        plt.clf()

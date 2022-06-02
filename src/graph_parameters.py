@@ -5,8 +5,10 @@ from src.dag_visualizer import DAG_Visualizer
 from src.utils import load_dag, save_dag, calculate_vectors_relative_angle, calculate_direction, generational_diff
 import numpy as np
 from sklearn.decomposition import PCA
+from sklearn.linear_model import LinearRegression
 from skimage.morphology import convex_hull_image
 from scipy.signal import fftconvolve
+from scipy.ndimage import zoom
 
 class GraphParameters:
     def __init__(self, 
@@ -34,13 +36,13 @@ class GraphParameters:
         print("Getting information about generations of edges...")
         self.find_edges_generation(max_gen)
 
-        print("Getting information about number of vessels")
+        print("Getting information about number of vessels...")
         self.get_number_of_vessels()
 
-        print("Getting information about vessel average and total length")
+        print("Getting information about vessel average and total length...")
         self.get_vessel_length()
 
-        print("Getting information about volume filled with vascular structure")
+        print("Getting information about volume filled with vascular structure...")
         self.get_volume_filled_with_vascular_structure()
 
         print("Getting information about interstitial distances to nearest vessels...")
@@ -62,6 +64,9 @@ class GraphParameters:
 
             print("Calcularing lacunarity")
             self.get_lacunarity()
+
+            print("Calculating fractal dimension")
+            self.fractal_dimension()
 
         print("Saving graph file...")
         save_dag(self.dag, "results/dag_with_stats.pkl")
@@ -294,3 +299,34 @@ class GraphParameters:
     def get_lacunarity(self):
         box_sizes = [10, 30, 50, 70, 90, 110, 130, 150]
         self.dag['lacunarity'] = self.calculate_avg_lacunarity(box_sizes)
+
+
+    ####################################################################################
+    #                               FRACTAL DIMENSION                                  #
+    ####################################################################################
+
+    def get_projection_contour(self):
+        padded_projection = np.pad(self.reconstruction_projection_mask, 1)
+        contour = np.zeros(padded_projection.shape)
+        projection_pixels = np.argwhere(padded_projection)
+        kernel = np.ones((3, 3))
+        kernel[1, 1] = 0
+        for pixel in projection_pixels:
+            x, y = tuple(pixel)
+            projection_slice = padded_projection[x-1 : x+2, y-1 : y+2]
+            if np.sum(projection_slice * kernel) < 8:
+                contour[x, y] = 1
+        return contour[1:-1, 1:-1]
+
+    def fractal_dimension(self):
+        contours_lengths =[]
+        scales = np.arange(1, 0.1, -0.1)
+
+        scales, contours_lengths = DAG_Visualizer.visualize_contours(scales, contours_lengths, self.reconstruction_projection_mask, self.get_projection_contour)
+
+        X = np.expand_dims(np.log(scales), axis=-1)
+        y = np.expand_dims(np.log(contours_lengths), axis=-1)
+        lm = LinearRegression().fit(X, y)
+        self. dag['fractal_dimension'] = lm.coef_[0, 0]
+
+        DAG_Visualizer.scales_contour_lengths(scales, contours_lengths, lm)
