@@ -7,8 +7,8 @@ class GraphStats:
         self.dag = dag
 
     def generate_all_stats(self):
-        print("Generating stats about mean length in graph")
-        self.mean_length()
+        print("Generating stats about edges in graph")
+        self.edges()
 
         print("Generating stats about mean diameter in graph")
         self.mean_diameter()
@@ -37,6 +37,7 @@ class GraphStats:
     def mean_length(self):
         lengths_generations = [(edge['length'], edge['generation']) for edge in self.dag.edges]
         lengths, generations, lengths_per_gen = self.stats_per_gen(lengths_generations)
+        edges_per_gen = [len(eg) for eg in lengths_per_gen]
 
         plt.title('lengths count')
         plt.hist(lengths, bins=5)
@@ -50,6 +51,13 @@ class GraphStats:
         plt.xlabel('generation')
         plt.ylabel('lengths')
         plt.savefig(f"results/lengths_per_generation")
+        plt.clf()
+
+        plt.title('edges per generation')
+        plt.boxplot(edges_per_gen[:-1])
+        plt.xlabel('generation')
+        plt.ylabel('edges count')
+        plt.savefig(f"results/edges_per_generation")
         plt.clf()
 
     def mean_diameter(self):
