@@ -1,5 +1,4 @@
 from src.dag import DAG
-from src.utils import get_lengths, get_diameters
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -22,6 +21,9 @@ class GraphStats:
 
         # VOLUME FILLED WITH VASCULAR STRUCTURE to json/csv?
 
+        print("Generating stats about interstitial distances")
+        self.interstitial_distances()
+
     def stats_per_gen(self, stat):
         stats = [lg[0] for lg in stat]
         gens = [lg[1] for lg in stat]
@@ -31,7 +33,7 @@ class GraphStats:
         return stats, gens, stats_per_gen
 
     def mean_length(self):
-        lengths_generations = get_lengths(self.dag.root)
+        lengths_generations = [(edge['length'], edge['generation']) for edge in self.dag.edges]
         lengths, generations, lengths_per_gen = self.stats_per_gen(lengths_generations)
 
         plt.title('lengths count')
@@ -49,7 +51,7 @@ class GraphStats:
         plt.clf()
 
     def mean_diameter(self):
-        diameters_generations = get_diameters(self.dag.root)
+        diameters_generations = [(edge['mean_radius'], edge['generation']) for edge in self.dag.edges]
         diameters, generations, diameters_per_gen = self.stats_per_gen(diameters_generations)
 
         plt.title('lengths count')
@@ -100,4 +102,22 @@ class GraphStats:
         plt.xlabel('generation')
         plt.ylabel('tortuosities segments')
         plt.savefig(f"results/tortuosities_per_generation")
+        plt.clf()
+
+    def interstitial_distances(self):
+        int_dist_generations = [(edge['interstitial_distance'], edge['generation']) for edge in self.dag.edges[1:]]
+        int_distances, generations, int_dist_per_gen = self.stats_per_gen(int_dist_generations)
+
+        plt.title('interstitial distances')
+        plt.hist(int_distances, bins=8)
+        plt.xlabel('interstitial distance')
+        plt.ylabel('count')
+        plt.savefig(f"results/interstitial_distance")
+        plt.clf()
+
+        plt.title('interstitial distances per generation')
+        plt.boxplot(int_dist_per_gen)
+        plt.xlabel('generation')
+        plt.ylabel('interstitial distance')
+        plt.savefig(f"results/interstitial_distance_per_generation")
         plt.clf()

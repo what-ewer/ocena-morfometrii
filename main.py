@@ -13,4 +13,5 @@ if __name__ == "__main__":
     gp = GraphParameters(graph_files[1])
     gs = GraphStats(gp.dag)
     gs.generate_all_stats()
+    print(gp.dag.root.data)
     print(gp.dag.root.edges[0].data)

@@ -43,33 +43,3 @@ def generational_diff(a, b, max_angle, max_thick_diff):
         b['relative_angle'] < max_angle and 
         b['mean_radius'] > max_thick_diff * a['mean_radius']
     )
-
-def get_lengths_recursive(edges, lengths):
-    nodes = [edge.node_b for edge in edges]
-    if len(nodes) == 0:
-        return lengths
-
-    new_edges = []
-    for edge in edges:
-        children = edge.node_b.edges
-        lengths.append((edge['length'], edge['generation']))
-        new_edges.extend(children)
-    return get_lengths_recursive(new_edges, lengths)
-
-def get_lengths(root):
-    return get_lengths_recursive(root.edges, [])
-
-def get_diameters_recursive(edges, diameters):
-    nodes = [edge.node_b for edge in edges]
-    if len(nodes) == 0:
-        return diameters
-
-    new_edges = []
-    for edge in edges:
-        children = edge.node_b.edges
-        diameters.append((edge['mean_radius'], edge['generation']))
-        new_edges.extend(children)
-    return get_diameters_recursive(new_edges, diameters)
-
-def get_diameters(root):
-    return get_diameters_recursive(root.edges, [])

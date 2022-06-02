@@ -11,6 +11,7 @@ class GraphParameters:
 
         print(f"Calculating centroid of edges...")
         self.set_centroid_to_edges()
+        self.add_parent_to_nodes()
 
         print("Calculating edge directions...")
         self.set_edges_directions(weights)
@@ -27,6 +28,25 @@ class GraphParameters:
         print("Getting information about volume filled with vascular structure")
         self.get_volume_filled_with_vascular_structure()
 
+        print("Getting information about interstitial distances to nearest vessels...")
+        self.set_interstitial_distances()
+
+        # X fractal capacity
+
+        # X area covered by vascular network
+
+        # nbr of vessels
+
+        # vessel length - total and avg
+
+        # X vascular density
+
+        # X lacunarity
+
+        # correletion with stages of tumor aggressiveness
+
+        # X branching index
+
 
     ####################################################################################
     #                                  LOADING GRAPH                                   #
@@ -40,12 +60,17 @@ class GraphParameters:
             
 
     ####################################################################################
-    #                                    CENTROID                                      #
+    #                                CENTROID, PARENT                                  #
     ####################################################################################
 
     def set_centroid_to_edges(self):
         for e in self.dag.edges:
             e['centroid'] = np.mean(e['voxels'], axis=0)
+
+    def add_parent_to_nodes(self):
+        self.dag.root['parent'] = None
+        for e in self.dag.edges:
+            e.node_b['parent'] = e.node_a
 
 
     ####################################################################################
@@ -118,20 +143,36 @@ class GraphParameters:
 
 
     ####################################################################################
+    #                              INTERSTITIAL DISTANCE                               #
+    ####################################################################################
+    
+    def get_interstitial_distances(self, edge):
+        if len(edge.node_b.edges) == 0:
+            edge['interstitial_distance'] = np.linalg.norm(edge.node_b['centroid'] - edge['centroid'])
+        else:
+            edges = edge.node_b.edges
+            min_val = np.inf
+            for e in edges:
+                self.get_interstitial_distances(e)
+                dist =  np.linalg.norm(edge['centroid'] - e['centroid']) + e['interstitial_distance']
+                if dist < min_val:
+                    min_val = dist
+            edge['interstitial_distance'] = min_val
+
+    def set_interstitial_distances(self):
+        for e in self.dag.root.edges:
+            self.get_interstitial_distances(e)
+
+
+    ####################################################################################
     #                      VOLUME FILLED WITH VASCULAR STRUCTURE                       #
     ####################################################################################
 
-    def get_volume_recursive(self, edges, sum):
-        if len(edges) == 0:
-            return sum
-
-        new_edges = []
-        for e in edges:
-            sum += len(e['voxels']) * e['mean_radius'] * e['mean_radius'] * np.pi
-            sum += 4/3 * e.node_b['radius'] * e.node_b['radius'] * e.node_b['radius'] * np.pi
-            new_edges.extend(e.node_b.edges)
-        return self.get_volume_recursive(new_edges, sum)
-
     def get_volume_filled_with_vascular_structure(self):
-        self.dag['vascular_structure_volume'] = self.get_volume_recursive(self.dag.root.edges, 0)
-        print(self.dag['vascular_structure_volume'])
+        sum = 0
+        for e in self.dag.edges:
+            sum += 2/3 * len(e['voxels']) * e['mean_radius'] * e['mean_radius'] * np.pi
+        self.dag['vascular_structure_volume'] = sum
+        # print(self.dag['vascular_structure_volume'])
+        # reconstruction = np.load('data/P07/reconstruction.npy')
+        # print(np.sum(reconstruction > 0))
