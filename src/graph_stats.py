@@ -1,14 +1,16 @@
 from src.dag import DAG
 import matplotlib.pyplot as plt
 import numpy as np
+import csv
 
 class GraphStats:
-    def __init__(self, dag: DAG):
+    def __init__(self, dag: DAG, dag_id: str = ""):
         self.dag = dag
+        self.dag_id = dag_id
 
     def generate_all_stats(self):
         print("Generating stats about edges in graph")
-        self.edges()
+        self.mean_length()
 
         print("Generating stats about mean diameter in graph")
         self.mean_diameter()
@@ -19,12 +21,11 @@ class GraphStats:
         print("Generating stats about tortuosities segments in graph")
         self.tortuosities()
 
-        # VOLUME FILLED WITH VASCULAR STRUCTURE to json/csv?
-
         print("Generating stats about interstitial distances")
         self.interstitial_distances()
 
-        # AREA COVERED BY VASCULAR NETWORK to json/csv?
+        print("Saving graph stats to CSV")
+        self.save_graph_stats_to_csv()
 
     def stats_per_gen(self, stat):
         stats = [lg[0] for lg in stat]
@@ -43,21 +44,21 @@ class GraphStats:
         plt.hist(lengths, bins=5)
         plt.xlabel('length')
         plt.ylabel('count')
-        plt.savefig(f"results/lengths")
+        plt.savefig(f"results/{self.dag_id}_lengths")
         plt.clf()
 
         plt.title('lengths per generation')
         plt.boxplot(lengths_per_gen[:-1])
         plt.xlabel('generation')
         plt.ylabel('lengths')
-        plt.savefig(f"results/lengths_per_generation")
+        plt.savefig(f"results/{self.dag_id}_lengths_per_generation")
         plt.clf()
 
         plt.title('edges per generation')
         plt.boxplot(edges_per_gen[:-1])
         plt.xlabel('generation')
         plt.ylabel('edges count')
-        plt.savefig(f"results/edges_per_generation")
+        plt.savefig(f"results/{self.dag_id}_edges_per_generation")
         plt.clf()
 
     def mean_diameter(self):
@@ -68,14 +69,14 @@ class GraphStats:
         plt.hist(diameters, bins=8)
         plt.xlabel('diameter')
         plt.ylabel('count')
-        plt.savefig(f"results/diameters")
+        plt.savefig(f"results/{self.dag_id}_diameters")
         plt.clf()
 
         plt.title('diameters per generation')
         plt.boxplot(diameters_per_gen[:-1])
         plt.xlabel('generation')
         plt.ylabel('diameters')
-        plt.savefig(f"results/diameters_per_generation")
+        plt.savefig(f"results/{self.dag_id}_diameters_per_generation")
         plt.clf()
 
     def bifurcation_angles(self):
@@ -86,14 +87,14 @@ class GraphStats:
         plt.hist(angles, bins=18)
         plt.xlabel('angle')
         plt.ylabel('count')
-        plt.savefig(f"results/bifurcation_angles")
+        plt.savefig(f"results/{self.dag_id}_bifurcation_angles")
         plt.clf()
 
         plt.title('bifurcation angles per generation')
         plt.boxplot(angles_per_gen[:-1])
         plt.xlabel('generation')
         plt.ylabel('angles')
-        plt.savefig(f"results/bifurcation_angles_per_generation")
+        plt.savefig(f"results/{self.dag_id}_bifurcation_angles_per_generation")
         plt.clf()
 
     def tortuosities(self):
@@ -104,14 +105,14 @@ class GraphStats:
         plt.hist(tortuosities, bins=8)
         plt.xlabel('tortuosities segments')
         plt.ylabel('count')
-        plt.savefig(f"results/tortuosities")
+        plt.savefig(f"results/{self.dag_id}_tortuosities")
         plt.clf()
 
         plt.title('segments tortuosities per generation')
         plt.boxplot(tortuosities_per_gen[:-1])
         plt.xlabel('generation')
         plt.ylabel('tortuosities segments')
-        plt.savefig(f"results/tortuosities_per_generation")
+        plt.savefig(f"results/{self.dag_id}_tortuosities_per_generation")
         plt.clf()
 
     def interstitial_distances(self):
@@ -122,13 +123,43 @@ class GraphStats:
         plt.hist(int_distances, bins=8)
         plt.xlabel('interstitial distance')
         plt.ylabel('count')
-        plt.savefig(f"results/interstitial_distance")
+        plt.savefig(f"results/{self.dag_id}_interstitial_distance")
         plt.clf()
 
         plt.title('interstitial distances per generation')
         plt.boxplot(int_dist_per_gen[:-1])
         plt.xlabel('generation')
         plt.ylabel('interstitial distance')
-        plt.savefig(f"results/interstitial_distance_per_generation")
+        plt.savefig(f"results/{self.dag_id}_interstitial_distance_per_generation")
         plt.clf()
     
+    def save_graph_stats_to_csv(self):
+        header = [
+            'number_of_vessels',
+            'vessel_total_length',
+            'vessel_avg_length',
+            'vascular_structure_volume',
+            'vascular_network_projection_area',
+            'projection_explant_area',
+            'vascular_density',
+            'branching_points',
+            'branchings_points_per_pixel',
+            'lacunarity',
+        ]
+        data = [
+            self.dag['number_of_vessels'],
+            self.dag['vessel_total_length'],
+            self.dag['vessel_avg_length'],
+            self.dag['vascular_structure_volume'],
+            self.dag['vascular_network_projection_area'],
+            self.dag['projection_explant_area'],
+            self.dag['vascular_density'],
+            self.dag['branching_points'],
+            self.dag['branchings_points_per_pixel'],
+            self.dag['lacunarity'],
+        ]
+
+        with open(f'results/{self.dag_id}_stats', 'w') as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
+            writer.writerow(data)

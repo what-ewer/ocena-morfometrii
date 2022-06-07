@@ -15,7 +15,10 @@ class GraphParameters:
             graph_path, # path to graph file
             reconstruction_path = None,  # path to reconstruction (if want to get 3d parameters)
             max_gen = 8,
-            edge_dir_weights = [1, 1, 1, 1, 1, 0.8, 0.8, 0.6, 0.2]):
+            edge_dir_weights = [1, 1, 1, 1, 1, 0.8, 0.8, 0.6, 0.2],
+            dag_id: str = ""):
+        
+        self.dag_id = dag_id
 
         print(f"Loading graph file {graph_path}...")
         self.load_graph(graph_path)
@@ -42,9 +45,6 @@ class GraphParameters:
         print("Getting information about vessel average and total length...")
         self.get_vessel_length()
 
-        print("Getting information about volume filled with vascular structure...")
-        self.get_volume_filled_with_vascular_structure()
-
         print("Getting information about interstitial distances to nearest vessels...")
         self.set_interstitial_distances()
 
@@ -52,6 +52,9 @@ class GraphParameters:
         if reconstruction_path:
             print("Loading reconstruction...")
             self.reconstruction = np.load(reconstruction_path)
+
+            print("Getting information about volume filled with vascular structure...")
+            self.get_volume_filled_with_vascular_structure()
 
             print("Getting vascular network area in 2d")
             self.get_vascular_network_area()
@@ -69,7 +72,7 @@ class GraphParameters:
             self.fractal_dimension()
 
         print("Saving graph file...")
-        save_dag(self.dag, "results/dag_with_stats.pkl")
+        save_dag(self.dag, f"results/{self.dag_id}_dag_with_stats.pkl")
 
 
     ####################################################################################
@@ -226,10 +229,11 @@ class GraphParameters:
     ####################################################################################
 
     def get_volume_filled_with_vascular_structure(self):
-        sum = 0
-        for e in self.dag.edges:
-            sum += 2/3 * len(e['voxels']) * e['mean_radius'] * e['mean_radius'] * np.pi
-        self.dag['vascular_structure_volume'] = sum
+        self.dag['vascular_structure_volume'] = np.sum(self.reconstruction > 0)
+        # sum = 0
+        # for e in self.dag.edges:
+        #     sum += 2/3 * len(e['voxels']) * e['mean_radius'] * e['mean_radius'] * np.pi
+        # self.dag['vascular_structure_volume'] = sum
 
 
     ####################################################################################
@@ -249,7 +253,7 @@ class GraphParameters:
         shifted_projection = (rounded_reconstruction_projection - mins).astype(np.int)
         self.reconstruction_projection_mask = np.zeros(np.max(shifted_projection + 1, axis=0), dtype=np.bool)
         self.reconstruction_projection_mask[shifted_projection[:, 0], shifted_projection[:, 1]] = 1
-        DAG_Visualizer.vascular_network_area(self.reconstruction_projection_mask)
+        DAG_Visualizer.vascular_network_area(self.reconstruction_projection_mask, self.dag_id)
         self.dag['vascular_network_projection_area'] = np.sum(self.reconstruction_projection_mask)
 
 
@@ -259,7 +263,7 @@ class GraphParameters:
 
     def vascular_density(self):
         self.convex_projection = convex_hull_image(self.reconstruction_projection_mask)
-        DAG_Visualizer.vascular_density(self.convex_projection)
+        DAG_Visualizer.vascular_density(self.convex_projection, self.dag_id)
         self.dag['projection_explant_area'] = self.convex_projection.sum()
         self.dag['vascular_density'] = self.dag['vascular_network_projection_area'] / self.dag['projection_explant_area']
 
@@ -322,11 +326,11 @@ class GraphParameters:
         contours_lengths =[]
         scales = np.arange(1, 0.1, -0.1)
 
-        scales, contours_lengths = DAG_Visualizer.visualize_contours(scales, contours_lengths, self.reconstruction_projection_mask, self.get_projection_contour)
+        scales, contours_lengths = DAG_Visualizer.visualize_contours(scales, contours_lengths, self.reconstruction_projection_mask, self.get_projection_contour, self.dag_id)
 
         X = np.expand_dims(np.log(scales), axis=-1)
         y = np.expand_dims(np.log(contours_lengths), axis=-1)
         lm = LinearRegression().fit(X, y)
         self. dag['fractal_dimension'] = lm.coef_[0, 0]
 
-        DAG_Visualizer.scales_contour_lengths(scales, contours_lengths, lm)
+        DAG_Visualizer.scales_contour_lengths(scales, contours_lengths, lm, self.dag_id)

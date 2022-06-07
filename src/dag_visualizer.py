@@ -48,21 +48,21 @@ class DAG_Visualizer:
         DAG_Visualizer.visualize_skeleton(lsd, visualize_mask=True)
 
     @staticmethod
-    def vascular_network_area(reconstruction_projection_mask):
+    def vascular_network_area(reconstruction_projection_mask, dag_id):
         plt.figure(figsize=(15, 10))
         plt.title('vascular network area 2d')
         im = Image.fromarray(reconstruction_projection_mask.T)
-        im.save("results/vascular_network_2d.png")
+        im.save(f"results/{dag_id}_vascular_network_2d.png")
 
     @staticmethod
-    def vascular_density(convex_projection):
+    def vascular_density(convex_projection, dag_id):
         plt.figure(figsize=(15, 10))
         plt.title('convex projection')
         im = Image.fromarray(convex_projection.T)
-        im.save("results/convex_projection.png")
+        im.save(f"results/{dag_id}_convex_projection.png")
 
     @staticmethod
-    def visualize_contours(scales, contours_lengths, rec_mask, proj_contour_func):
+    def visualize_contours(scales, contours_lengths, rec_mask, proj_contour_func, dag_id):
         plt.figure(figsize=(10, 40))
         for i, scale in enumerate(scales):
             proj = zoom(rec_mask, scale, order=0)
@@ -72,16 +72,16 @@ class DAG_Visualizer:
             plt.subplot(len(scales), 2, 2 * i + 2)
             plt.imshow(contour.T)
             contours_lengths.append(int(np.sum(contour)))
-        plt.savefig('results/contours_scaled')
+        plt.savefig(f'results/{dag_id}_contours_scaled')
         plt.clf()
         return scales, contours_lengths
 
     @staticmethod
-    def scales_contour_lengths(scales, contours_lengths, lm):
+    def scales_contour_lengths(scales, contours_lengths, lm, dag_id):
         plt.figure(figsize=(11, 7))
         plt.scatter(np.log(scales), np.log(contours_lengths), s=30)
         plt.plot(np.log(scales), lm.predict(np.log(scales).reshape(-1, 1)), color='red')
         plt.xlabel('log(scaling_factor)')
         plt.ylabel('log(contour_area)')
-        plt.savefig('results/scales_contour_corelation')
+        plt.savefig(f'results/{dag_id}_scales_contour_corelation')
         plt.clf()
