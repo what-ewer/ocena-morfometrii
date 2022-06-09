@@ -17,7 +17,6 @@ class DAG_GenerationalComparison:
             
         plt.xlabel('Liver Graph')
         plt.ylabel('Generation')
-        plt.show()
         plt.savefig(f"results/graph_comparison_{title}")
         plt.clf()
 

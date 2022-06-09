@@ -159,7 +159,7 @@ class GraphStats:
             self.dag['lacunarity'],
         ]
 
-        with open(f'results/{self.dag_id}_stats', 'w') as f:
+        with open(f'results/{self.dag_id}_stats.csv', 'w') as f:
             writer = csv.writer(f)
             writer.writerow(header)
             writer.writerow(data)
