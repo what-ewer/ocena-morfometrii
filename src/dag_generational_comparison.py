@@ -33,7 +33,28 @@ class DAG_GenerationalComparison:
         plt.savefig(f"results/graph_comparison_{title}")
         plt.clf()
 
-    def __compare_lengths(self):
+    def __generational_comparison(self, data, title, y_label):
+        for d in data:
+            sd = sum(d)
+            for i in range(len(d)):
+                d[i] /= sd
+
+        gens = [i+1 for i in range(self.max_gen)]
+        plot_data = []
+        
+        for i,d in enumerate(data):
+            plot_data.append(gens)
+            plot_data.append(d)
+
+        plt.figure(figsize=(8,8))
+        plt.plot(*plot_data)
+        plt.legend(self.dag_names)
+        plt.ylabel(y_label)
+        plt.xlabel('Generation')
+        plt.savefig(f"results/generational_comparison_{title}")
+        plt.clf()
+
+    def compare_lengths(self):
         lengths_per_gen_per_graph = [[[] for _ in range(len(self.dags))] for _ in range(self.max_gen)]
 
         for i, d in enumerate(self.dags):
@@ -43,11 +64,13 @@ class DAG_GenerationalComparison:
                     lengths_per_gen_per_graph[e[1]-1][i].append(e[0])
 
         edges_per_gen_per_graph = [[len(lengths_per_gen_per_graph[g][i]) for i in range(len(self.dags))] for g in range(self.max_gen)]
+        edges_per_graph_per_gen = [[edges_per_gen_per_graph[g][i] for g in range(self.max_gen)] for i in range(len(self.dags))]
 
         self.__get_boxplot_comparison(lengths_per_gen_per_graph, "lengths_per_generation")
         self.__get_plot_comparison(edges_per_gen_per_graph, "edges_per_generation")
+        self.__generational_comparison(edges_per_graph_per_gen, "edges_per_graph_per_gen", "edges / total edges")
         
-    def __compare_diameters(self):
+    def compare_diameters(self):
         diameters_per_gen_per_graph = [[[] for _ in range(len(self.dags))] for _ in range(self.max_gen)]
         for i, d in enumerate(self.dags):
             diameters_generations = [(edge['mean_radius'], edge['generation']) for edge in d.edges]
@@ -57,7 +80,7 @@ class DAG_GenerationalComparison:
 
         self.__get_boxplot_comparison(diameters_per_gen_per_graph, "diameters_per_generation")
 
-    def __compare_bifurcation_angles(self):
+    def compare_bifurcation_angles(self):
         bifurcation_angles_per_gen_per_graph = [[[] for _ in range(len(self.dags))] for _ in range(self.max_gen)]
         for i, d in enumerate(self.dags):
             angles_generations = [(edge['relative_angle'] / np.pi * 180, edge['generation']) for edge in d.edges[1:]]
@@ -67,7 +90,7 @@ class DAG_GenerationalComparison:
 
         self.__get_boxplot_comparison(bifurcation_angles_per_gen_per_graph, "bifurcation_angles_per_generation")
 
-    def __compare_tortuosities(self):
+    def compare_tortuosities(self):
         tortuosities_per_gen_per_graph = [[[] for _ in range(len(self.dags))] for _ in range(self.max_gen)]
         for i, d in enumerate(self.dags):
             tortuosities_generations = [(edge['tortuosity'], edge['generation']) for edge in d.edges]
@@ -77,7 +100,7 @@ class DAG_GenerationalComparison:
 
         self.__get_boxplot_comparison(tortuosities_per_gen_per_graph, "tortuosities_per_generation")
 
-    def __compare_interstitial_distances(self):
+    def compare_interstital_distances(self):
         interstitial_distances_per_gen_per_graph = [[[] for _ in range(len(self.dags))] for _ in range(self.max_gen)]
         for i, d in enumerate(self.dags):
             interstitial_distances_generations = [(edge['interstitial_distance'], edge['generation']) for edge in d.edges]
@@ -88,8 +111,8 @@ class DAG_GenerationalComparison:
         self.__get_boxplot_comparison(interstitial_distances_per_gen_per_graph, "interstitial_distances_angles_per_generation")
 
     def compare_all(self):
-        self.__compare_lengths()
-        self.__compare_diameters()
-        self.__compare_bifurcation_angles()
-        self.__compare_tortuosities()
-        self.__compare_interstitial_distances()
+        self.compare_lengths()
+        self.compare_diameters()
+        self.compare_bifurcation_angles()
+        self.compare_tortuosities()
+        self.compare_interstital_distances()

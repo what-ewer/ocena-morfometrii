@@ -41,7 +41,7 @@ class GraphStats:
         edges_per_gen = [len(eg) for eg in lengths_per_gen]
 
         plt.title('lengths count')
-        plt.hist(lengths, bins=5)
+        plt.hist(lengths)
         plt.xlabel('length')
         plt.ylabel('count')
         plt.savefig(f"results/{self.dag_id}_lengths")
