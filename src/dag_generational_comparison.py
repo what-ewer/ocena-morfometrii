@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class DAG_GenerationalComparison:
-    def __init__(self, dags, dag_names, max_gen=8):
+    def __init__(self, dags, dag_names, max_gen=10):
         self.dags = dags
         self.dag_names = dag_names
         assert len(dags) == len(dag_names)
@@ -69,6 +69,7 @@ class DAG_GenerationalComparison:
                     lengths_per_gen_per_graph[e[1]-1][i].append(e[0])
 
         edges_per_gen_per_graph = [[len(lengths_per_gen_per_graph[g][i]) for i in range(len(self.dags))] for g in range(self.max_gen)]
+        edges_avg_len_per_graph_per_gen = [[np.average(lengths_per_gen_per_graph[g][i]) for g in range(self.max_gen)] for i in range(len(self.dags))]
         edges_per_graph_per_gen = [[edges_per_gen_per_graph[g][i] for g in range(self.max_gen)] for i in range(len(self.dags))]
         for d in edges_per_graph_per_gen:
             sd = sum(d)
@@ -78,6 +79,7 @@ class DAG_GenerationalComparison:
         self.__get_boxplot_comparison(lengths_per_gen_per_graph, "lengths_per_generation", save)
         self.__get_plot_comparison(edges_per_gen_per_graph, "edges_per_generation", save)
         self.__generational_comparison(edges_per_graph_per_gen, "edges_per_graph_per_gen", "edges / total edges", save)
+        self.__generational_comparison(edges_avg_len_per_graph_per_gen, "avg_edges_len_per_graph_per_gen", "average edge length", save)
         
     def compare_diameters(self, save=True):
         diameters_per_gen_per_graph = [[[] for _ in range(len(self.dags))] for _ in range(self.max_gen)]

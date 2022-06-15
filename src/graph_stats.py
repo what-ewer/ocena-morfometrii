@@ -4,9 +4,10 @@ import numpy as np
 import csv
 
 class GraphStats:
-    def __init__(self, dag: DAG, dag_id: str = ""):
+    def __init__(self, dag: DAG, dag_id: str = "", max_gen: int = 8):
         self.dag = dag
         self.dag_id = dag_id
+        self.max_gen = max_gen
 
     def generate_all_stats(self):
         print("Generating stats about edges in graph")
@@ -37,6 +38,7 @@ class GraphStats:
 
     def mean_length(self):
         lengths_generations = [(edge['length'], edge['generation']) for edge in self.dag.edges]
+        lengths_generations = list(filter(lambda x: x[1] <= self.max_gen, lengths_generations))
         lengths, generations, lengths_per_gen = self.stats_per_gen(lengths_generations)
         edges_per_gen = [len(eg) for eg in lengths_per_gen]
 
@@ -48,14 +50,14 @@ class GraphStats:
         plt.clf()
 
         plt.title('lengths per generation')
-        plt.boxplot(lengths_per_gen[:-1])
+        plt.boxplot(lengths_per_gen)
         plt.xlabel('generation')
         plt.ylabel('lengths')
         plt.savefig(f"results/{self.dag_id}_lengths_per_generation")
         plt.clf()
 
         plt.title('edges per generation')
-        plt.boxplot(edges_per_gen[:-1])
+        plt.boxplot(edges_per_gen)
         plt.xlabel('generation')
         plt.ylabel('edges count')
         plt.savefig(f"results/{self.dag_id}_edges_per_generation")
@@ -63,6 +65,7 @@ class GraphStats:
 
     def mean_diameter(self):
         diameters_generations = [(edge['mean_radius'], edge['generation']) for edge in self.dag.edges]
+        diameters_generations = list(filter(lambda x: x[1] <= self.max_gen, diameters_generations))
         diameters, generations, diameters_per_gen = self.stats_per_gen(diameters_generations)
 
         plt.title('lengths count')
@@ -73,7 +76,7 @@ class GraphStats:
         plt.clf()
 
         plt.title('diameters per generation')
-        plt.boxplot(diameters_per_gen[:-1])
+        plt.boxplot(diameters_per_gen)
         plt.xlabel('generation')
         plt.ylabel('diameters')
         plt.savefig(f"results/{self.dag_id}_diameters_per_generation")
@@ -81,6 +84,7 @@ class GraphStats:
 
     def bifurcation_angles(self):
         angles_generations = [(edge['relative_angle'] / np.pi * 180, edge['generation']) for edge in self.dag.edges[1:]]
+        angles_generations = list(filter(lambda x: x[1] <= self.max_gen, angles_generations))
         angles, generations, angles_per_gen = self.stats_per_gen(angles_generations)
 
         plt.title('bifurcation angles count')
@@ -91,15 +95,16 @@ class GraphStats:
         plt.clf()
 
         plt.title('bifurcation angles per generation')
-        plt.boxplot(angles_per_gen[:-1])
+        plt.boxplot(angles_per_gen)
         plt.xlabel('generation')
         plt.ylabel('angles')
         plt.savefig(f"results/{self.dag_id}_bifurcation_angles_per_generation")
         plt.clf()
 
     def tortuosities(self):
-        angles_generations = [(edge['tortuosity'], edge['generation']) for edge in self.dag.edges]
-        tortuosities, generations, tortuosities_per_gen = self.stats_per_gen(angles_generations)
+        tortuosities_generations = [(edge['tortuosity'], edge['generation']) for edge in self.dag.edges]
+        tortuosities_generations = list(filter(lambda x: x[1] <= self.max_gen, tortuosities_generations))
+        tortuosities, generations, tortuosities_per_gen = self.stats_per_gen(tortuosities_generations)
 
         plt.title('segments tortuosisities count')
         plt.hist(tortuosities, bins=8)
@@ -109,7 +114,7 @@ class GraphStats:
         plt.clf()
 
         plt.title('segments tortuosities per generation')
-        plt.boxplot(tortuosities_per_gen[:-1])
+        plt.boxplot(tortuosities_per_gen)
         plt.xlabel('generation')
         plt.ylabel('tortuosities segments')
         plt.savefig(f"results/{self.dag_id}_tortuosities_per_generation")
@@ -117,6 +122,7 @@ class GraphStats:
 
     def interstitial_distances(self):
         int_dist_generations = [(edge['interstitial_distance'], edge['generation']) for edge in self.dag.edges]
+        int_dist_generations = list(filter(lambda x: x[1] <= self.max_gen, int_dist_generations))
         int_distances, generations, int_dist_per_gen = self.stats_per_gen(int_dist_generations)
 
         plt.title('interstitial distances')
@@ -127,7 +133,7 @@ class GraphStats:
         plt.clf()
 
         plt.title('interstitial distances per generation')
-        plt.boxplot(int_dist_per_gen[:-1])
+        plt.boxplot(int_dist_per_gen)
         plt.xlabel('generation')
         plt.ylabel('interstitial distance')
         plt.savefig(f"results/{self.dag_id}_interstitial_distance_per_generation")

@@ -73,6 +73,7 @@ class GraphParameters:
 
         print("Saving graph file...")
         save_dag(self.dag, f"results/{self.dag_id}_dag_with_stats.pkl")
+        save_dag(self.dag, graph_path.replace('dag.pkl', 'dag_with_stats.pkl'))
 
 
     ####################################################################################
@@ -128,7 +129,7 @@ class GraphParameters:
                 edge['relative_angle'] = calculate_vectors_relative_angle(
                     parent_edge['end_direction'], edge['start_direction'])
             else:
-                edge['relative_angle'] = None
+                edge['relative_angle'] = 0
                     
             self.set_edges_relative_angles(edge.node_b, edge)
 
