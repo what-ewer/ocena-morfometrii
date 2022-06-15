@@ -1,5 +1,9 @@
+from this import d
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import csv
+import seaborn as sns
 
 class DAG_GenerationalComparison:
     def __init__(self, dags, dag_names, max_gen=10):
@@ -59,6 +63,39 @@ class DAG_GenerationalComparison:
         else:
             plt.show()
 
+    def save_to_csv(self):
+        header = [
+            'number_of_vessels',
+            'vessel_total_length',
+            'vessel_avg_length',
+            'vascular_structure_volume',
+            'vascular_network_projection_area',
+            'projection_explant_area',
+            'vascular_density',
+            'branching_points',
+            'branchings_points_per_pixel',
+            'lacunarity'
+        ]
+        data = [
+            [d['number_of_vessels'],
+            d['vessel_total_length'],
+            d['vessel_avg_length'],
+            d['vascular_structure_volume'],
+            d['vascular_network_projection_area'],
+            d['projection_explant_area'],
+            d['vascular_density'],
+            d['branching_points'],
+            d['branchings_points_per_pixel'],
+            d['lacunarity']] for d in self.dags
+        ]
+
+        with open(f'results/all_dags_stats.csv', 'w') as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
+            for d in data:
+                writer.writerow(d)
+
+
     def compare_lengths(self, save=True):
         lengths_per_gen_per_graph = [[[] for _ in range(len(self.dags))] for _ in range(self.max_gen)]
 
@@ -76,8 +113,8 @@ class DAG_GenerationalComparison:
             for i in range(len(d)):
                 d[i] /= sd
 
-        self.__get_boxplot_comparison(lengths_per_gen_per_graph, "lengths_per_generation", save)
-        self.__get_plot_comparison(edges_per_gen_per_graph, "edges_per_generation", save)
+        self.__get_boxplot_comparison(lengths_per_gen_per_graph, "lengths_per_generation", True)
+        self.__get_plot_comparison(edges_per_gen_per_graph, "edges_per_generation", True)
         self.__generational_comparison(edges_per_graph_per_gen, "edges_per_graph_per_gen", "edges / total edges", save)
         self.__generational_comparison(edges_avg_len_per_graph_per_gen, "avg_edges_len_per_graph_per_gen", "average edge length", save)
         
@@ -91,7 +128,7 @@ class DAG_GenerationalComparison:
 
         diameters_per_graph_per_gen = [[np.average(diameters_per_gen_per_graph[g][i]) for g in range(self.max_gen)] for i in range(len(self.dags))]
 
-        self.__get_boxplot_comparison(diameters_per_gen_per_graph, "diameters_per_generation", save)
+        self.__get_boxplot_comparison(diameters_per_gen_per_graph, "diameters_per_generation", True)
         self.__generational_comparison(diameters_per_graph_per_gen, "avg_diameters_per_graph_per_gen", "mean diameter", save)
 
     def compare_bifurcation_angles(self, save=True):
@@ -102,7 +139,7 @@ class DAG_GenerationalComparison:
                 if (e[1]-1 < self.max_gen):
                     bifurcation_angles_per_gen_per_graph[e[1]-1][i].append(e[0])
 
-        self.__get_boxplot_comparison(bifurcation_angles_per_gen_per_graph, "bifurcation_angles_per_generation", save)
+        self.__get_boxplot_comparison(bifurcation_angles_per_gen_per_graph, "bifurcation_angles_per_generation", True)
 
     def compare_tortuosities(self, save=True):
         tortuosities_per_gen_per_graph = [[[] for _ in range(len(self.dags))] for _ in range(self.max_gen)]
@@ -112,7 +149,7 @@ class DAG_GenerationalComparison:
                 if (e[1]-1 < self.max_gen):
                     tortuosities_per_gen_per_graph[e[1]-1][i].append(e[0])
 
-        self.__get_boxplot_comparison(tortuosities_per_gen_per_graph, "tortuosities_per_generation", save)
+        self.__get_boxplot_comparison(tortuosities_per_gen_per_graph, "tortuosities_per_generation", True)
 
     def compare_interstital_distances(self, save=True):
         interstitial_distances_per_gen_per_graph = [[[] for _ in range(len(self.dags))] for _ in range(self.max_gen)]
@@ -122,7 +159,33 @@ class DAG_GenerationalComparison:
                 if (e[1]-1 < self.max_gen):
                     interstitial_distances_per_gen_per_graph[e[1]-1][i].append(e[0])
 
-        self.__get_boxplot_comparison(interstitial_distances_per_gen_per_graph, "interstitial_distances_angles_per_generation", save)
+        self.__get_boxplot_comparison(interstitial_distances_per_gen_per_graph, "interstitial_distances_angles_per_generation", True)
+
+    def compare_dag_stats_correlation(self, save=True):
+        self.save_to_csv()
+        df = pd.read_csv('results/all_dags_stats.csv')
+        df.columns = [
+            'vessels count', 
+            'total vessel len', 
+            'vessel avg len', 
+            'vascular structure vol', 
+            'vascular network proj area',
+            'projection explant area',
+            'vascular density',
+            'branching points',
+            'branching points per pixel',
+            'lacunarity'
+        ]
+        if save:
+            fig, ax = plt.subplots()
+            sns.heatmap(df.corr(method='pearson'), annot=True, fmt='.3f', 
+                        cmap=plt.get_cmap('coolwarm'), cbar=False, ax=ax)
+            ax.set_yticklabels(ax.get_yticklabels(), rotation="horizontal")
+            plt.savefig('results/graph_correlation.png')
+        else:
+            corr = df.dropna().corr()
+            corr.style.background_gradient(cmap='coolwarm').set_precision(3)
+
 
     def compare_all(self):
         self.compare_lengths()
