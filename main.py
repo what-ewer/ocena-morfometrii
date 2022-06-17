@@ -13,14 +13,16 @@ if __name__ == "__main__":
     graph_files = list(filter(pkl_stats_re.match, data_files)) 
     print(f"Currently avalible graph with stats files: {graph_files}")
 
-    dag_names = []
     dags = []
     for g in graph_files:
         dag_id = g.split('data\\')[1].split('\\')[0]
         dag = load_dag(g)
+        dags.append((dag,dag_id))
 
-        dags.append(dag)
-        dag_names.append(dag_id)
+    exclude = ["P02", "P03", "P11", "P13", "P24", "P25", "P26", "P30", "P32"]
+    dags = [x for x in dags if x[1] not in exclude]
 
-    dag_gen_comparison = DAG_GenerationalComparison(dags, dag_names, 8)
+    dag_names = [d[1] for d in dags]
+    dag_graphs = [d[0] for d in dags]
+    dag_gen_comparison = DAG_GenerationalComparison(dag_graphs, dag_names, 8)
     dag_gen_comparison.compare_all()

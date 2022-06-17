@@ -1,4 +1,3 @@
-from this import d
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -112,7 +111,7 @@ class DAG_GenerationalComparison:
             sd = sum(d)
             for i in range(len(d)):
                 d[i] /= sd
-
+                
         self.__get_boxplot_comparison(lengths_per_gen_per_graph, "lengths_per_generation", True)
         self.__get_plot_comparison(edges_per_gen_per_graph, "edges_per_generation", True)
         self.__generational_comparison(edges_per_graph_per_gen, "edges_per_graph_per_gen", "edges / total edges", save)
@@ -186,10 +185,33 @@ class DAG_GenerationalComparison:
             corr = df.dropna().corr()
             corr.style.background_gradient(cmap='coolwarm').set_precision(3)
 
+    def correlate_generation_for_edges(self, save=True):
+        all_edges = [{
+            'mean_radius': e['mean_radius'],
+            'length': e['length'],
+            'relative_angle': e['relative_angle'],
+            'tortuosity': e['tortuosity'],
+            'interstitial_distance': e['interstitial_distance'],
+            'generation': e['generation'],
+        } for g in self.dags for e in g.edges if e['generation'] <= self.max_gen]
+
+        df = pd.DataFrame(all_edges)
+        
+        if save:
+            fig, ax = plt.subplots()
+            sns.heatmap(df.corr(method='pearson'), annot=True, fmt='.3f', 
+                        cmap=plt.get_cmap('coolwarm'), cbar=False, ax=ax)
+            ax.set_yticklabels(ax.get_yticklabels(), rotation="horizontal")
+            plt.savefig('results/generations_correlation.png')
+        else:
+            corr = df.dropna().corr()
+            corr.style.background_gradient(cmap='coolwarm').set_precision(3)
 
     def compare_all(self):
+        self.compare_dag_stats_correlation()
         self.compare_lengths()
         self.compare_diameters()
         self.compare_bifurcation_angles()
         self.compare_tortuosities()
         self.compare_interstital_distances()
+        self.correlate_generation_for_edges()
