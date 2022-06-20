@@ -104,6 +104,8 @@ class DAG_GenerationalComparison:
                 if (e[1]-1 < self.max_gen):
                     lengths_per_gen_per_graph[e[1]-1][i].append(e[0])
 
+        self.correlate_generations_lengths(lengths_per_gen_per_graph)
+
         edges_per_gen_per_graph = [[len(lengths_per_gen_per_graph[g][i]) for i in range(len(self.dags))] for g in range(self.max_gen)]
         edges_avg_len_per_graph_per_gen = [[np.average(lengths_per_gen_per_graph[g][i]) for g in range(self.max_gen)] for i in range(len(self.dags))]
         edges_per_graph_per_gen = [[edges_per_gen_per_graph[g][i] for g in range(self.max_gen)] for i in range(len(self.dags))]
@@ -206,6 +208,25 @@ class DAG_GenerationalComparison:
         else:
             corr = df.dropna().corr()
             corr.style.background_gradient(cmap='coolwarm').set_precision(3)
+
+    def correlate_generations_lengths(self, lengths_per_gen_per_graph, save=True):
+        plt.title('Correlation mean lengths per generation')
+        np_lengths = np.array(lengths_per_gen_per_graph)
+        avg_lengths_per_gen = np.empty(shape=np_lengths.shape)
+        for i, item in enumerate(np_lengths):
+            for j, graph in enumerate(item):
+                avg_lengths_per_gen[i, j] = np.array(graph).mean()
+        df = pd.DataFrame(avg_lengths_per_gen.T)
+        print(avg_lengths_per_gen)
+        fig, ax = plt.subplots()
+        sns.heatmap(df.corr(method='pearson'), annot=True, fmt='.3f',
+                    cmap=plt.get_cmap('coolwarm'), cbar=False, ax=ax, xticklabels=[i+1 for i in range(10)], yticklabels=[i+1 for i in range(10)])
+        ax.set_yticklabels(ax.get_yticklabels(), rotation="horizontal")
+        if not save:
+            plt.show()
+        else:
+            plt.savefig(f"results/Correlation_mean_length_per_gen")
+            plt.clf()
 
     def compare_all(self):
         self.compare_dag_stats_correlation()
